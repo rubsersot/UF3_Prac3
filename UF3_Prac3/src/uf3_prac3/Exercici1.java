@@ -8,7 +8,7 @@ package uf3_prac3;
  *
  * @author ausias
  */
-public class UF3_Prac3 {
+public class Exercici1 {
 
     /**
      * @param args the command line arguments
