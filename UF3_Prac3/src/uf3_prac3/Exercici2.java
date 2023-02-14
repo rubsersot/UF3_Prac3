@@ -29,12 +29,6 @@ public class Exercici2 {
     public static Scanner scan = new Scanner(System.in);
     static File clients = new File("clients.bin");
     
-    static final int LONG_NOM = 20;
-    static final int LONG_COGNOMS = 30;
-    static final int LONG_ADRECA = 40;
-    static final int LONG_MAIL = 40;
-    
-    
     public static void main(String[] args) {
         crearFitxer();
         
@@ -97,16 +91,7 @@ public class Exercici2 {
     
     private static void altaClient(Clients client){
         client = demanarDades(client);
-        client = formatarDades(client);
         afegirDades(client);
-    }
-    
-    private static Clients formatarDades(Clients client){
-        client.nom = String.format("%-20s", client.nom);
-        client.cognoms = String.format("%-30s", client.cognoms);
-        client.adrecaPostal = String.format("%-40s", client.adrecaPostal);
-        client.email = String.format("%-40s", client.email);
-        return client;
     }
     
     private static void afegirDades(Clients client){
@@ -114,14 +99,16 @@ public class Exercici2 {
             FileOutputStream fos = new FileOutputStream(clients, true);
             DataOutputStream dos = new DataOutputStream(fos);
             dos.writeInt(client.codi);
-            dos.write(client.nom.getBytes(), 0, client.nom.length());
-            dos.write(client.cognoms.getBytes(), 0, client.cognoms.length());
+            dos.writeUTF(client.nom);
+            dos.writeUTF(client.cognoms);
             dos.writeInt(client.diaNaixement);
             dos.writeInt(client.mesNaixement);
             dos.writeInt(client.anyNaixement);
-            dos.write(client.adrecaPostal.getBytes(), 0, client.adrecaPostal.length());
-            dos.write(client.email.getBytes(), 0, client.email.length());
+            dos.writeUTF(client.adrecaPostal);
+            dos.writeUTF(client.email);
             dos.writeBoolean(client.vip);
+            dos.flush();
+            dos.close();
         } catch (FileNotFoundException ex) {
             System.out.println("El fitxer no existeix");
         } catch (IOException ex) {
@@ -176,11 +163,16 @@ public class Exercici2 {
         try {
             fis = new FileInputStream(clients);
             DataInputStream dis = new DataInputStream(fis);
-            int codi = dis.readInt();
-            System.out.println("Codi: " + codi);
-            String nom = "";
-            for(int i = 0; i < LONG_NOM; ++i) nom += (char) dis.readByte();
-            System.out.println("Nom: " + nom);
+            System.out.println("Codi: " + dis.readInt());
+            System.out.println("Nom: " + dis.readUTF());
+            System.out.println("Cognoms: " + dis.readUTF());
+            System.out.println("Data de Naixement (DD/MM/YYYY): " + dis.readInt() + "/" + dis.readInt() + "/" + dis.readInt());
+            System.out.println("Adreça postal: " + dis.readUTF());
+            System.out.println("E-mail: " + dis.readUTF());
+            boolean vip = dis.readBoolean();
+            System.out.print("VIP: ");
+            if(vip) System.out.println("Si");
+            else System.out.println("No");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Exercici2.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
