@@ -2,10 +2,6 @@ package uf3_prac3;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -27,10 +23,10 @@ public class Exercici2 {
     }
     
     public static Scanner scan = new Scanner(System.in);
-    static File clients = new File("clients.bin");
+    static String NOM_FITX_BIN = "clients.bin";
     
     public static void main(String[] args) {
-        crearFitxer();
+        Utils.AbrirFichero(NOM_FITX_BIN, true);
         
         mostrarMenu();
         
@@ -40,33 +36,24 @@ public class Exercici2 {
         scan.close();
     }
     
-    private static void crearFitxer(){
-        if(!clients.exists()){
-            try {
-                clients.createNewFile();
-            } catch (IOException ex) {
-                System.out.println("ERROR!, no s'ha pogut crear el fitxer");
-            }
-        }
-    }
-    
     private static void gestionarOpcions(int opcio){
-        Clients client = new Clients();
         while(opcio != 0){
             switch (opcio) {
                 case 1:
-                    altaClient(client);
+                    altaClient();
                     break;
                 case 2:
+                    consultarClientPosicio();
                     break;
                 case 3:
+                    consultarClientCodi();
                     break;
                 case 4:
                     break;
                 case 5:
                     break;
                 case 6:
-                    mostrarDades();
+                    llistarClients();
                     break;
                 default:
                     System.out.println("ERROR, opció no vàlida");
@@ -89,15 +76,32 @@ public class Exercici2 {
         System.out.print("Introdueix una opció: ");
     }
     
-    private static void altaClient(Clients client){
+    private static void altaClient(){
+        Clients client = new Clients();
         client = demanarDades(client);
         afegirDades(client);
     }
     
+    private static boolean existeixClient(int codi){
+        boolean existeix = false;
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        while (cli != null && !existeix) {
+            if (cli.codi == codi) {
+                existeix = true;
+            }
+            else{
+                cli = leerCodigo(dis);
+                leerCliente(dis, cli);
+            }
+        }
+        return existeix;
+    }
+    
     private static void afegirDades(Clients client){
         try {
-            FileOutputStream fos = new FileOutputStream(clients, true);
-            DataOutputStream dos = new DataOutputStream(fos);
+            DataOutputStream dos = Utils.AbrirFicheroEscrituraBinario(NOM_FITX_BIN, true, true);
             dos.writeInt(client.codi);
             dos.writeUTF(client.nom);
             dos.writeUTF(client.cognoms);
@@ -107,10 +111,7 @@ public class Exercici2 {
             dos.writeUTF(client.adrecaPostal);
             dos.writeUTF(client.email);
             dos.writeBoolean(client.vip);
-            dos.flush();
-            dos.close();
-        } catch (FileNotFoundException ex) {
-            System.out.println("El fitxer no existeix");
+            Utils.CerrarFicheroBinario(dos);
         } catch (IOException ex) {
             Logger.getLogger(Exercici2.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -118,18 +119,28 @@ public class Exercici2 {
     
     private static Clients demanarDades(Clients client){
         client.codi = Utils.LlegirInt("Introdueix el codi: ");
-        System.out.print("Introdueix el nom: ");
-        client.nom = scan.nextLine();
-        System.out.print("Introdueix els cognoms: ");
-        client.cognoms = scan.nextLine();
-        client.diaNaixement = Utils.LlegirInt("Introdueix el dia de naixement: ");
-        client.mesNaixement = Utils.LlegirInt("Introdueix el mes de naixement: ");
-        client.anyNaixement = Utils.LlegirInt("Introdueix l'any de naixement: ");
-        System.out.print("Introdueix l'adreça postal: ");
-        client.adrecaPostal = scan.nextLine();
-        System.out.print("Introdueix l'email: ");
-        client.email = scan.nextLine();
-        client.vip = llegirVip();
+        boolean valid = false;
+        while(!valid){
+            if(existeixClient(client.codi)){
+                client.codi = Utils.LlegirInt("ERROR! el client amb aquest codi ja existeix torna a introduir-lo: ");
+            }
+            else{
+                System.out.print("Introdueix el nom: ");
+                client.nom = scan.nextLine();
+                System.out.print("Introdueix els cognoms: ");
+                client.cognoms = scan.nextLine();
+                client.diaNaixement = Utils.LlegirInt("Introdueix el dia de naixement: ");
+                client.mesNaixement = Utils.LlegirInt("Introdueix el mes de naixement: ");
+                client.anyNaixement = Utils.LlegirInt("Introdueix l'any de naixement: ");
+                System.out.print("Introdueix l'adreça postal: ");
+                client.adrecaPostal = scan.nextLine();
+                System.out.print("Introdueix l'email: ");
+                client.email = scan.nextLine();
+                client.vip = llegirVip();
+                valid = true;
+            }
+        }
+        
         return client;
     }
     
@@ -158,36 +169,119 @@ public class Exercici2 {
         return vip;
     }
     
-    private static void mostrarDades(){
-        FileInputStream fis = null;
-        try {
-            fis = new FileInputStream(clients);
-            DataInputStream dis = new DataInputStream(fis);
-            System.out.println("Codi: " + dis.readInt());
-            System.out.println("Nom: " + dis.readUTF());
-            System.out.println("Cognoms: " + dis.readUTF());
-            System.out.println("Data de Naixement (DD/MM/YYYY): " + dis.readInt() + "/" + dis.readInt() + "/" + dis.readInt());
-            System.out.println("Adreça postal: " + dis.readUTF());
-            System.out.println("E-mail: " + dis.readUTF());
-            boolean vip = dis.readBoolean();
-            System.out.print("VIP: ");
-            if(vip) System.out.println("Si");
-            else System.out.println("No");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Exercici2.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(Exercici2.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                fis.close();
-            } catch (IOException ex) {
-                Logger.getLogger(Exercici2.class.getName()).log(Level.SEVERE, null, ex);
+    private static void consultarClientPosicio(){
+        int posicio = Utils.LlegirInt("Introdueix la posició del client (pos inicial = 0): ");
+        int contador = 0;
+        boolean trobat = false;
+        
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        while(cli != null && !trobat){
+            if(contador == posicio){
+                mostrarDades(cli);
+                trobat = true;
+            }
+            else{
+                ++contador;
+                leerCliente(dis, cli);
             }
         }
     }
     
-    private static void llistarClients(){
+    private static void consultarClientCodi(){
+        int codi = Utils.LlegirInt("Introdueix el codi del client: ");
+        boolean trobat = false;
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        while(cli != null && !trobat){
+            if(cli.codi == codi){
+                mostrarDades(cli);
+                trobat = true;
+            }
+            else{
+                cli = leerCodigo(dis);
+                leerCliente(dis, cli);
+            }
+        }
+    }
+    
+    private static void modificarClient(){
+        int codi = Utils.LlegirInt("Introdueix el codi del client: ");
+        boolean trobat = false;
         
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        while(cli != null && !trobat){
+            if(cli.codi == codi){
+                mostrarDades(cli);
+                
+                trobat = true;
+            }
+            else{
+                cli = leerCodigo(dis);
+                leerCliente(dis, cli);
+            }
+        }
+    }
+    
+    private static Clients leerCodigo(DataInputStream dis){
+        Clients cli = new Clients();
+        
+        try {
+            cli.codi = dis.readInt();
+        } catch (IOException ex) {
+            cli = null;
+        }
+        return cli;
+    }
+    
+    private static void leerCliente(DataInputStream dis, Clients cli){ 
+        try {
+            cli.nom = dis.readUTF();
+            cli.cognoms = dis.readUTF();
+            cli.diaNaixement = dis.readInt();
+            cli.mesNaixement = dis.readInt();
+            cli.anyNaixement = dis.readInt();
+            cli.adrecaPostal = dis.readUTF();
+            cli.email = dis.readUTF();
+            cli.vip = dis.readBoolean();
+            
+        } catch (IOException ex) {
+            cli = null;
+        }
+    }
+    
+    private static void mostrarDades(Clients cli){
+        System.out.println("Codi: " + cli.codi);
+        System.out.println("Nom: " + cli.nom);
+        System.out.println("Cognoms: " + cli.cognoms);
+        System.out.println("Data de Naixement (DD/MM/YYYY): " + cli.diaNaixement + "/" + 
+                cli.mesNaixement + "/" + cli.anyNaixement);
+        System.out.println("Adreça postal: " + cli.adrecaPostal);
+        System.out.println("E-mail: " + cli.email);
+        boolean vip = cli.vip;
+        System.out.print("VIP: ");
+        if(vip) System.out.println("Si");
+        else System.out.println("No");
+    }
+    
+    private static void llistarClients(){
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        int contador = 1;
+        while(cli != null){
+            System.out.println("Client " + contador);
+            mostrarDades(cli);
+            ++contador;
+            cli = leerCodigo(dis);
+            leerCliente(dis, cli);
+        }
+        
+        Utils.CerrarFicheroBinario(dis);
     }
     
 }
