@@ -24,6 +24,7 @@ public class Exercici2 {
     
     public static Scanner scan = new Scanner(System.in);
     static String NOM_FITX_BIN = "clients.bin";
+    static String NOM_FITX_TEMP = "temporal.bin";
     
     public static void main(String[] args) {
         Utils.AbrirFichero(NOM_FITX_BIN, true);
@@ -40,7 +41,7 @@ public class Exercici2 {
         while(opcio != 0){
             switch (opcio) {
                 case 1:
-                    altaClient();
+                    altaClient(NOM_FITX_BIN);
                     break;
                 case 2:
                     consultarClientPosicio();
@@ -49,8 +50,10 @@ public class Exercici2 {
                     consultarClientCodi();
                     break;
                 case 4:
+                    modificarClient();
                     break;
                 case 5:
+                    esborrarClient();
                     break;
                 case 6:
                     llistarClients();
@@ -76,10 +79,10 @@ public class Exercici2 {
         System.out.print("Introdueix una opció: ");
     }
     
-    private static void altaClient(){
+    private static void altaClient(String nomFitxer){
         Clients client = new Clients();
         client = demanarDades(client);
-        afegirDades(client);
+        afegirDades(client, nomFitxer);
     }
     
     private static boolean existeixClient(int codi){
@@ -99,9 +102,9 @@ public class Exercici2 {
         return existeix;
     }
     
-    private static void afegirDades(Clients client){
+    private static void afegirDades(Clients client, String nomFitxer){
         try {
-            DataOutputStream dos = Utils.AbrirFicheroEscrituraBinario(NOM_FITX_BIN, true, true);
+            DataOutputStream dos = Utils.AbrirFicheroEscrituraBinario(nomFitxer, true, true);
             dos.writeInt(client.codi);
             dos.writeUTF(client.nom);
             dos.writeUTF(client.cognoms);
@@ -184,6 +187,7 @@ public class Exercici2 {
             }
             else{
                 ++contador;
+                cli = leerCodigo(dis);
                 leerCliente(dis, cli);
             }
         }
@@ -209,22 +213,45 @@ public class Exercici2 {
     
     private static void modificarClient(){
         int codi = Utils.LlegirInt("Introdueix el codi del client: ");
-        boolean trobat = false;
         
         DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
         Clients cli = leerCodigo(dis);
         leerCliente(dis, cli);
-        while(cli != null && !trobat){
+        while(cli != null){
             if(cli.codi == codi){
                 mostrarDades(cli);
+                altaClient(NOM_FITX_TEMP);
                 
-                trobat = true;
             }
             else{
-                cli = leerCodigo(dis);
-                leerCliente(dis, cli);
+                afegirDades(cli, NOM_FITX_TEMP);
             }
+            cli = leerCodigo(dis);
+            leerCliente(dis, cli);
         }
+        Utils.CerrarFicheroBinario(dis);
+        Utils.BorrarFichero(NOM_FITX_BIN);
+        Utils.RenombrarFichero(NOM_FITX_TEMP, NOM_FITX_BIN);
+        Utils.BorrarFichero(NOM_FITX_TEMP);
+    }
+    
+    private static void esborrarClient(){
+        int codi = Utils.LlegirInt("Introdueix el codi del client: ");
+        
+        DataInputStream dis = Utils.AbrirFicheroLecturaBinario(NOM_FITX_BIN, true);
+        Clients cli = leerCodigo(dis);
+        leerCliente(dis, cli);
+        while(cli != null){
+            if(cli.codi != codi){
+                afegirDades(cli, NOM_FITX_TEMP);
+            }
+            cli = leerCodigo(dis);
+            leerCliente(dis, cli);
+        }
+        Utils.CerrarFicheroBinario(dis);
+        Utils.BorrarFichero(NOM_FITX_BIN);
+        Utils.RenombrarFichero(NOM_FITX_TEMP, NOM_FITX_BIN);
+        Utils.BorrarFichero(NOM_FITX_TEMP);
     }
     
     private static Clients leerCodigo(DataInputStream dis){
